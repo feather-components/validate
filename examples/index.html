@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>validate examples</title>
+    <script src="../bower_components/jquery/dist/jquery.js"></script>
+    <script src="../bower_components/class/index.js"></script>
+    <link rel="stylesheet" type="text/css" href="../index.css" />
+    <script src="../rms.js"></script>
+    <script src="../index.js"></script>
+    <style>
+    a{
+        margin: 20px;
+    }
+    </style>
+</head>
+
+<body>
+<form id="form">
+    <input type="text" name="username" data-rule='{required: true}' data-msg="{required: ['字段正确', '']}" />
+    <input type="password" name="password" />
+</form>
+
+<script>
+$('#form').validate({
+    rules: {
+        password: {
+            remote: {
+                type: 'jsonp',
+                url: 'http://member.pinganfang.com/v2/api/web/user/letter/getLetterNum?callback=jQuery1124030841735366343626_1488786371163&_=1488786371164',
+                error: function(xhr){
+                    // console.log(xhr);
+                    // xhr.resolve('1333');
+                }
+            }
+        }
+    }
+}).validate('check');
+</script>
+</body>
+</html>
