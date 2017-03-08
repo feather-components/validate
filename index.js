@@ -20,15 +20,22 @@ var Validate = Class.$factory('validate', {
             msgs: {},
             onlyFirstErrorVisible: false,
             ignore: '',//:disable,hidden
-            beforeCheck: function(value){
+            valFormat: function(value){
                 return $.trim(value);
             },
             msgPlaceholder: function(){
                 return $(this).parent();
             },
             msgFormat: function(msg, type){
-                return msg;
-            }
+                if(msg != null){
+                    if(type == 'fail' || type == 'pass'){
+                        msg = '<i class="ui3-validate-icon">&nbsp;</i>' + msg;
+                    }
+
+                    return msg;
+                }
+            },
+            msgClassName: ''
         }, options || {});
 
         this.init();
@@ -121,6 +128,7 @@ var Validate = Class.$factory('validate', {
         $.each($.unique(names), function(index, name){
             var rules = rule ? Validate.analyseRule(rule) : self.getRule(name);
             var msgs = self.getMsg(name, false, msgs);
+            console.log(msgs);
             var $element = self.$(name);
 
             if(Validate.isSpecialElement($element)){
@@ -128,16 +136,16 @@ var Validate = Class.$factory('validate', {
             }
 
             var element = $element.get(0);
-            var value = options.beforeCheck.call(element, element.value);
+            var value = options.valFormat.call(element, element.value);
             var defer = $.Deferred().resolve('check [' + name + '] start!'), promise = defer.promise();
 
             $.each(rules, function(ruleName, checker){ 
                 promise = promise.then(function(){
-                    return checker(value).then(function(){
-                        var msg = (msgs[ruleName] || [])[0];
+                    return checker.call(element, value).then(function(){
+                        var msg = (msgs[ruleName] || [])[1];
                         return [name, msg];
                     }, function(){
-                        var msg = (msgs[ruleName] || [])[1];
+                        var msg = (msgs[ruleName] || [])[0];
                         return [name, msg];
                     });
                 });
@@ -178,24 +186,27 @@ var Validate = Class.$factory('validate', {
         var self = this, element = self.$(name);
         
         self.trigger('fail', [name, msg]);
-        self.showMsg(name, self.options.msgFormat.call(element, msg, 'fail'));
+        self.showMsg(name, msg, 'fail');
     },
 
     pass: function(name, msg){
         var self = this, element = self.$(name);
         
         self.trigger('pass', [name, msg]);
-        self.showMsg(name, self.options.msgFormat.call(element, msg, 'pass'));
+        self.showMsg(name, msg, 'pass');
     },
 
-    showMsg: function(name, msg, className){
-        var self = this, element = self.$(name).get(0), $placeholder = $(self.options.msgPlaceholder.call(element));
+    showMsg: function(name, msg, type){
+        var self = this, options = self.options;
+        var element = self.$(name).get(0), $placeholder = $(options.msgPlaceholder.call(element));
 
         $placeholder.find('.ui3-validate-msg').remove();
 
+        msg = options.msgFormat.call(element, msg, type);
+
         if(msg == null) return;
 
-        $placeholder.append('<span class="ui3-validate-msg ' + (className || '') + '">' + msg + '</span>');
+        $('<span class="ui3-validate-msg ' + (type ? 'ui3-validate-' + type : '') + '">' + msg + '</span>').addClass(options.msgClassName).appendTo($placeholder);
     },
 
     reset: function(name, _default){
@@ -223,6 +234,8 @@ Validate.decode = function(str){
     try{
         return (new Function('return ' + str))();
     }catch(e){};
+
+    return str;
 };
 
 Validate.overrideRule = function(name, checker){
@@ -270,11 +283,7 @@ Validate.analyseMsg = function(msgs){
         var temp = {};
 
         $.each(msgs, function(name, msg){
-            if(typeof msg == 'string'){
-                msg = [null, msg];
-            }else if(msg.length == 1){
-                msg = [null, msg[0]];
-            }
+            msg = $.makeArray(msg);
 
             $.each(name.split(','), function(key, name){
                 temp[name] = msg;
@@ -285,7 +294,7 @@ Validate.analyseMsg = function(msgs){
     }
 
     return {
-        _anonymous: msgs
+        _anonymous: $.makeArray(msgs)
     };
 };
 

@@ -1,22 +1,26 @@
-.ui2-formvalid-field{
-    background-image: url(./img/icon_tip.png);
-    background-repeat: no-repeat;
+.ui3-validate-msg{
     display: inline-block;
     line-height: 20px;
     height: 20px;
-    padding-left: 23px;
+    padding-left: 5px;
+    font-size: 14px;
+    overflow:auto;
+    _height: 1%;
 }
 
-.ui2-formvalid-field-error{
-    background-position: 0px -6px;
-    color:#EA3200;
+.ui3-validate-icon{
+    background-image: url(./icon.png);
+    background-repeat: none;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 5px;
 }
 
-.ui2-formvalid-field-success{
-    background-position: 0px -37px;
+.ui3-validate-pass .ui3-validate-icon {
+    background-position: 0px 58px;
 }
 
-.ui2-formvalid-field-default{
-    background-image: none;
-    padding-left: 0px;
+.ui3-validate-fail .ui3-validate-icon {
+    background-position: 0px 90px;
 }
