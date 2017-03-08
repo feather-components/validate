@@ -1,13 +1,13 @@
 ;(function(factory){
 if(typeof define == 'function' && define.amd){
     //seajs or requirejs environment
-    define([], factory);
+    define(['jquery'], factory);
 }else if(typeof module === 'object' && typeof module.exports == 'object'){
-    module.exports = factory();
+    module.exports = factory(require('jquery'));
 }else{
-    this.RMS = factory();
+    this.RMS = factory(window.jQuery);
 }
-})(function(){
+})(function($){
 return {
     rules: {
         required: /\S+/,
@@ -37,13 +37,10 @@ return {
 
             return true;
         },
+
         remote: function(value, options){
-            return $.ajax(options).always(function(){
-                console.log('success', arguments);
-            }, function(){
-                console.log('error', arguments);
-            }, function(){
-                 console.log('error', arguments);
+            return $.ajax(options).then(function(){
+                return options.checker.apply(null, arguments);
             });
         }
     },

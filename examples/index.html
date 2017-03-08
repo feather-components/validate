@@ -23,20 +23,72 @@
 </form>
 
 <script>
-$('#form').validate({
-    rules: {
-        password: {
-            remote: {
-                type: 'jsonp',
-                url: 'http://member.pinganfang.com/v2/api/web/user/letter/getLetterNum?callback=jQuery1124030841735366343626_1488786371163&_=1488786371164',
-                error: function(xhr){
-                    // console.log(xhr);
-                    // xhr.resolve('1333');
-                }
-            }
-        }
-    }
-}).validate('check');
+// $('#form').validate({
+//     rules: {
+//         password: {
+//             remote: {
+//                 type: 'jsonp',
+//                 url: 'http://member.pinganfang.com/v2/api/web/user/letter/getLetterNum?callback=jQuery1124030841735366343626_1488786371163&_=1488786371164',
+//                 error: function(xhr){
+//                     // console.log(xhr);
+//                     // xhr.resolve('1333');
+//                 }
+//             }
+//         }
+//     }
+// }).validate('check');
+
+function a(status, error){
+    var defer = $.Deferred();
+    status ? defer.resolve('1233') : defer.reject(error);
+    return defer.promise();
+}
+
+// a(true).done(function(){
+//     console.log('done');
+// }).done(function(){
+//     console.log('done');
+// }).always(function(){
+//     console.log('always');
+// }).always(function(){
+//     console.log('fdjkfd');
+// }).then(function(){
+//     return a(true).done(function(){
+//         console.log('inline done');
+//     })
+// })
+// 
+// 
+// 
+var defer = $.Deferred();
+defer.promise().then(function(){
+    console.log(3333);
+});
+
+defer.resolve('1111');
+
+
+// a(true).then(function(){
+//     console.log(1);
+//     return a(true).then(function(){
+//         console.log(2);
+//         return a(true).then(function(){
+//             console.log(4);
+//         })
+//     })
+// }).then(function(){
+//     console.log(3);
+// })
+
+// $.when(a(true), a(false, '1'), a(false, '2')).then(function(){
+//     console.log('pass', arguments);
+// }, function(){
+//     console.log(1233);
+//     console.log('error', arguments);
+// }).always(function(){
+//     console.log('always', arguments);
+// })
+
 </script>
 </body>
 </html>

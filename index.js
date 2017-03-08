@@ -18,11 +18,16 @@ var Validate = Class.$factory('validate', {
             dom: null,
             rules: {},
             msgs: {},
-            errorStop: false,
+            onlyFirstErrorVisible: false,
             ignore: '',//:disable,hidden
-            trimBeforeCheck: true,
+            beforeCheck: function(value){
+                return $.trim(value);
+            },
             msgPlaceholder: function(){
                 return $(this).parent();
+            },
+            msgFormat: function(msg, type){
+                return msg;
             }
         }, options || {});
 
@@ -35,6 +40,7 @@ var Validate = Class.$factory('validate', {
         self.rules = {};
         self.msgs = {};
         self.setRules(self.options.rules, self.options.msgs);
+        self.reset();
     },
 
     setRules: function(rules, msgs){
@@ -57,146 +63,150 @@ var Validate = Class.$factory('validate', {
                 self.addRule(name, rules, $.isPlainObject(msgs) ? (msgs[name] || '') : msgs);
             });
 
-            return true;
+            return;
         }
 
-        self.rules[name] = $.extend(self.rules[name] || {}, Validate.analyseRule(rules));
-        self.msgs[name] = $.extend(self.msgs[name] || {}, Validate.analyseMsg(msgs));
+        self.rules[name] = self.getRule(name, false, rules);
+        self.msgs[name] = self.getRule(name, false, msgs);
     },
 
-    getRule: function(name){
-        var self = this, rules = {}, msgs = {};
-        var $element = Validate.elements(self.options.dom, name);
-        var rules = Validate.decode($element.attr('data-rule')) || {}, msgs = Validate.decode($element.attr('data-msg')) || [];
+    getRule: function(name, exceptInlineRule, extraRules){
+        var inlineRules;
 
-        console.log(name, $.extend({}, this.rules[name] || {}, Validate.analyseRule(rules)));
+        if(!exceptInlineRule){
+            inlineRules = Validate.decode(this.$(name).attr('data-rule'));
+        }
 
-        return {
-            rules: $.extend({}, this.rules[name] || {}, Validate.analyseRule(rules)),
-            msgs: $.extend({}, this.msgs[name] || {}, Validate.analyseMsg(msgs))
-        };
+        return $.extend({}, this.rules[name] || {}, Validate.analyseRule(inlineRules), Validate.analyseRule(extraRules));
     },
 
-    check: function(name){
-        var self = this, options = self.options;
+    getMsg: function(name, exceptInlineMsg, extraMsgs){
+        var inlineMsgs;
 
-        //self.reset(name, false);
+        if(!exceptInlineMsg){
+            inlineMsgs = Validate.decode(this.$(name).attr('data-msg'));
+        }
 
-        Validate.elements(self.options.dom, name).not(options.ignore).each(function(){
-            var info = self.getRule(this.name);
+        return $.extend({}, Validate.analyseMsg(Validate.MSGS), this.msgs[name] || {}, Validate.analyseMsg(inlineMsgs), Validate.analyseMsg(extraMsgs));
+    },
 
-            $.each(info.rules, function(rule, checker){
-                var res = checker();
+    check: function(name, rule, msg, callback){
+        if(typeof msg == 'function'){
+            callback = msg;
+            msg = null;
+        }else if(typeof name == 'function'){
+            callback = name;
+            name = null;
+        }else{
+            callback = function(){};
+        }
 
-                console.log(res);
+        var self = this;
+        var options = self.options, onlyFirstErrorVisible = options.onlyFirstErrorVisible, firstErrorIsTrigger = false;
+        var $elements = self.$(name).not(options.ignore);
 
-                // if(res.done){
-                //     res.done(function(){
-                //         console.log(arguments);
-                //     });
-                // }
-            });
+        if(!$elements.length){
+            callback(true);
+            return;
+        }
+
+        self.reset(name);
+
+        var names = [], promiseList = [];
+
+        $elements.each(function(){
+            names.push(this.name);
         });
 
-        return;
+        $.each($.unique(names), function(index, name){
+            var rules = rule ? Validate.analyseRule(rule) : self.getRule(name);
+            var msgs = self.getMsg(name, false, msgs);
+            var $element = self.$(name);
 
-
-        for(var index in tmpRules){
-            var $tmp = self.getElement(index);
-
-            if(!$tmp.length || $tmp.is(':disabled') || $tmp.is(':hidden') && skipHidden) continue;
-            
-            var item = tmpRules[index],
-                value = FormValid.isCheckBtn($tmp) ? $tmp.filter(':checked').val() : $tmp.val(),
-                tmpStatus = true;
-
-            if(value == null){
-                value = '';
+            if(Validate.isSpecialElement($element)){
+                $element = $element.is(':checked');
             }
 
-            if(!$.isArray(item)){
-                item = [item];
-            }
+            var element = $element.get(0);
+            var value = options.beforeCheck.call(element, element.value);
+            var defer = $.Deferred().resolve('check [' + name + '] start!'), promise = defer.promise();
 
-            var tmp;
+            $.each(rules, function(ruleName, checker){ 
+                promise = promise.then(function(){
+                    return checker(value).then(function(){
+                        var msg = (msgs[ruleName] || [])[0];
+                        return [name, msg];
+                    }, function(){
+                        var msg = (msgs[ruleName] || [])[1];
+                        return [name, msg];
+                    });
+                });
+            });
 
-            for(var i = 0; i < item.length; i++){
-                tmp = item[i];
-
-                if(typeof tmp.rule == 'function' && !tmp.rule.call(this, value, index, tmp.standard)){
-                    status = false; tmpStatus = false;
-                }else if(tmp.rule.constructor == RegExp && !tmp.rule.test(value)){
-                    status = false; tmpStatus = false;
+            promise.then(function(arg){
+                self.pass(arg[0], arg[1]);
+            }, function(arg){
+                if(!onlyFirstErrorVisible || !firstErrorIsTrigger){
+                    self.fail(arg[0], arg[1]);
+                    firstErrorIsTrigger = true;
                 }
+            });
 
-                if(!tmpStatus){
-                    self.error(index, tmp.errorText, tmp.showErrorStatus || self.options.showErrorStatus);
-                    
-                    if(errorStop){
-                        return status;
-                    }
+            promiseList.push(promise);
+        });
 
-                    break;
-                }    
-            } 
-
-            tmpStatus && self.success(index, tmp.successText, tmp.showSuccessStatus || self.options.showSuccessStatus);
-        }
-
-        return status;
+        $.when.apply($, promiseList).done(function(){
+            callback(true);
+        }).fail(function(){
+            callback(false);
+        });
     },
 
-    error: function(name, text, showErrorStatus){
-        if(text != null && showErrorStatus !== false){
-            text = text || '';
-            this.setText(name, text || '', 'ui2-formvalid-field-error');   
-        } 
+    $: function(name){
+        var parent = this.options.dom;
 
-        this.trigger('error', [name, text]);
-    },
-
-    success: function(name, text, showSuccessStatus){
-        if(text != null && showSuccessStatus !== false){
-            text = text || '';
-            this.setText(name, text, 'ui2-formvalid-field-success');    
+        if(name){
+            return $('[name="' + name + '"]', parent);
         }
 
-        this.trigger('success', [name, text]);
+        return $('[name]', parent).filter(function(){
+            return !!this.name;
+        });
     },
 
-    setText: function(name, text, classname){
-        var $parent = this.getElement(name).parent();
+    fail: function(name, msg){
+        var self = this, element = self.$(name);
+        
+        self.trigger('fail', [name, msg]);
+        self.showMsg(name, self.options.msgFormat.call(element, msg, 'fail'));
+    },
 
-        $parent.find('.ui2-formvalid-field[data-formvalid-target="' + name + '"]').remove();
+    pass: function(name, msg){
+        var self = this, element = self.$(name);
+        
+        self.trigger('pass', [name, msg]);
+        self.showMsg(name, self.options.msgFormat.call(element, msg, 'pass'));
+    },
 
-        if(text != null){
-            $parent.append('<span class="ui2-formvalid-field ' + classname + '" data-formvalid-target="' + name + '">' + (text || '&nbsp;') + '</span>');
-        }
+    showMsg: function(name, msg, className){
+        var self = this, element = self.$(name).get(0), $placeholder = $(self.options.msgPlaceholder.call(element));
+
+        $placeholder.find('.ui3-validate-msg').remove();
+
+        if(msg == null) return;
+
+        $placeholder.append('<span class="ui3-validate-msg ' + (className || '') + '">' + msg + '</span>');
     },
 
     reset: function(name, _default){
         var self = this;
 
-        if(name){
-            var text; 
-
-            if(_default == null || _default){
-                text = self.getElement(name).attr(FormValid.ATTRIBUTE_DEFAULT);
-            }
-            
-            self.setText(name, text, 'ui2-formvalid-field-default');
+        if(name){            
+            self.showMsg(name, _default || self.$(name).attr('data-default-msg'));
         }else{
-            self.getElement().each(function(){
-                var name = this.name;
-
-                if(!name) return;
-
-                if(_default == null || _default){
-                    text = $(this).attr(FormValid.ATTRIBUTE_DEFAULT);
-                }
-
-                self.setText(name, text, 'ui2-formvalid-field-default');
-            });
+            self.$().each(function(){
+                self.reset(this.name);
+            })
         }
     },
 
@@ -209,16 +219,6 @@ var Validate = Class.$factory('validate', {
     }
 });
 
-Validate.elements = function(parent, name){
-    if(name){
-        return $('[name="' + name + '"]', parent);
-    }
-
-    return $('[name]', parent).filter(function(){
-        return !!this.name;
-    });
-};
-
 Validate.decode = function(str){
     try{
         return (new Function('return ' + str))();
@@ -229,29 +229,53 @@ Validate.overrideRule = function(name, checker){
     var rule = Validate.RULES[name] || checker, standard = checker;
 
     return function(value){
-        return rule.constructor == RegExp ? rule.test(name) : rule.call(this, value, standard);
+        var res = rule.constructor == RegExp ? rule.test(value) : rule.call(this, value, standard);
+
+        if(typeof res.promise == 'function'){
+            return res.then(function(res){
+                var defer = $.Deferred();
+                res ? defer.resolve(name) : defer.reject(name);
+                return defer.promise();
+            });
+        }
+
+        var defer = $.Deferred();
+        res ? defer.resolve(name) : defer.reject(name);
+        return defer.promise();
     };
 };
 
 Validate.analyseRule = function(rules){
+    if(!rules) return {};
+
     if(rules.constructor == Object){
         $.each(rules, function(rule, checker){
             rules[rule] = Validate.overrideRule(rule, checker);
         });
-    }else{
-        rules = {
-            _anonymous: Validate.overrideRule('_anonymous', rules)
-        }
+
+        return rules;
     }
 
-    return rules;
+    var name = typeof rules == 'string' && Validate.RULES[rules] ? Validate.RULES[rules] : '_anonymous';
+    var reRules = {};
+
+    reRules[name] = Validate.overrideRule(name, rules);
+    return reRules;
 };
 
 Validate.analyseMsg = function(msgs){
+    if(!msgs) return {};
+
     if(msgs.constructor == Object){
         var temp = {};
 
         $.each(msgs, function(name, msg){
+            if(typeof msg == 'string'){
+                msg = [null, msg];
+            }else if(msg.length == 1){
+                msg = [null, msg[0]];
+            }
+
             $.each(name.split(','), function(key, name){
                 temp[name] = msg;
             })
@@ -262,7 +286,7 @@ Validate.analyseMsg = function(msgs){
 
     return {
         _anonymous: msgs
-    }
+    };
 };
 
 Validate.RULES = RMS.rules || {};
