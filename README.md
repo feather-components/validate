@@ -31,7 +31,7 @@ validate 表单校验插件
 
 ```html
 <form id="form">
-    <p><input type="text" name="username" value="" data-rule='{required: true}' data-msg="{required: ['校验成功', '']}" data-default-msg="输入用户名" /></p>
+    <p><input type="text" name="username" value="" data-rule='{required: true}' data-msg="{required: ['', '校验成功']}" data-default-msg="输入用户名" /></p>
     <p><input type="password" name="password" value="" data-msg="{remote: '远程校验失败'}" /></p>
     <input type="submit" value="submit" />
 </form>
