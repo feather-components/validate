@@ -11,14 +11,14 @@ validate 表单校验插件
 
     * 直接在html中指定 data-rule属性/data-msg
 
-    ```html
+```html
 <input type="text" name="abc" data-rule='{required: true, "自定义key": /abc/}' data-msg='{required: "如果对应的msg只是字符串，则表示错误时提示的文案", "自定义key": ["第一个索引指的为是错误文案", "第2个索引为正确文案，可以为空"]}' />
 <input type="text" name="def" data-rule='/abc/' data-msg='rule为一个匿名规则，则对应的msg也应是匿名，错误时，显示该文案' data-default-msg="默认文案，一开始显示的文案" />
-    ```
+```
 
     * 通过rules和msgs options进行设置
 
-    ```js
+```js
 $('#form').validate({
     rules: {
         abc: {
@@ -43,7 +43,7 @@ $('#form').validate('addRule', 'username', {
 }, {
     require: 'xx'
 })
-    ```
+```
 
     预设规则：
 
@@ -56,7 +56,7 @@ $('#form').validate('addRule', 'username', {
     * length: {1,100}|{1,}|{,100}|{100}
     * remote: 远程调用
 
-        ```js
+```js
 $('#form').validate({
     rules: {
         username: {
@@ -73,13 +73,13 @@ $('#form').validate({
         }
     }
 })
-        ```
+```
 
 * onlyFirstErrorVisible：只显示第一个错误
 * ignore: 跳过的元素选择器，如 ignore: ':hidden,:disabled'
 * valFormat: 校验前，对每一个需要校验的元素的值做format，返回的值则为校验的真实值
 
-    ```html
+```html
 $('#form').validate({
     valFormat: function(value){
         //配合placeholder插件一起使用
@@ -90,22 +90,22 @@ $('#form').validate({
         return $.trim(value);
     }
 })
-    ```
+```
 
 * msgPlaceholder：显示消息的位置，默认为当前校验对象的父级下
 
-    ```html
+```html
 $('#form').validate({
     msgPlaceholder: function(){
         //将消息放置 当前校验的input元素父级下 class为msg-container的容器里
         return $(this).parent().find('.msg-container');
     }
 })
-    ```
+```
 
 * msgFormat：对消息进行format，该参数指定后，可对消息内容的显示进行定制化，默认会为fail的文案加上错误小图标，而pass的文案加上成功的小图标
 
-    ```html
+```html
 $('#form').validate({
     msgFormat: function(msg, type){
         if(msg != null){
@@ -120,7 +120,7 @@ $('#form').validate({
         }
     }
 });
-    ```
+```
 
 ###Events
 
@@ -132,11 +132,11 @@ $('#form').validate({
 * setRules(rules, msgs)： 重新设置所有的rules
 * check([name, ]callback)：检查指定元素或所有元素， callback为全部执行完毕后的回调函数
 
-    ```js
+```js
 $('#form').check(function(status){
     console.log('检查完毕，检查状态为:' + status);
 });
-    ```
+```
 
 * fail(name[, text])：手动触发一个错误
 * pass(name[, text, showSuccessStatus])：手动触发成功
