@@ -128,7 +128,6 @@ var Validate = Class.$factory('validate', {
         $.each($.unique(names), function(index, name){
             var rules = rule ? Validate.analyseRule(rule) : self.getRule(name);
             var msgs = self.getMsg(name, false, msgs);
-            console.log(msgs);
             var $element = self.$(name);
 
             if(Validate.isSpecialElement($element)){
