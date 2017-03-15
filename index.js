@@ -131,7 +131,7 @@ var Validate = Class.$factory('validate', {
             var $element = self.$(name);
 
             if(Validate.isSpecialElement($element)){
-                $element = $element.is(':checked');
+                $element = $element.filter(':checked');
             }
 
             var element = $element.get(0);
