@@ -20,11 +20,11 @@ return {
 
             range = range.replace(/\s+/g, '').split(',');
 
-            if(range[0] && value < r[0]){
+            if(range[0] && value < range[0]){
                 return false; 
             }
 
-            if(range[1] && value > r[1]){
+            if(range[1] && value > range[1]){
                 return false;
             }
 
@@ -32,7 +32,7 @@ return {
         },
         length: function(value, range){
             if(value){
-                return (new RegExp('[\\s\\S]{' + range + '}')).test(value);
+                return (new RegExp('^[\\s\\S]{' + range + '}$')).test(value);
             }
 
             return true;
