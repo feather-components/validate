@@ -1,7 +1,7 @@
 validate 表单校验插件
 ================================
 
-###Options
+### Options
 
 * dom: 检验的dom对象
 * rules：规则object
@@ -122,12 +122,12 @@ validate 表单校验插件
     });
     ```
 
-###Events
+### Events
 
 * pass(event, name, msg)：通过时触发，成功的元素都会触发
 * fail(event, name, msg)：失败时触发
 
-###Api
+### Api
 
 * setRules(rules, msgs)： 重新设置所有的rules
 * check([name, ]callback)：检查指定元素或所有元素， callback为全部执行完毕后的回调函数
@@ -144,7 +144,7 @@ $('#form').check(function(status){
 * addRule(name[, rule, msg])：新增一个规则，name可为object
 * removeRule(name)：移除一个元素的规则
 
-###Example
+### Example
 
 ```html
 <form id="form">
